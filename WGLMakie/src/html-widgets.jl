@@ -30,8 +30,15 @@ function resize_parent(parent, block)
     end
     visible = block.blockscene.visible
     return js"""
+        // Mirror the block's visibility onto the HTML widget so that
+        // Makie.hide!/unhide! (which toggle blockscene.visible) keep working.
+        // This doesn't need the scene, so it is applied as soon as the widget is mounted.
+        const div = $(parent);
+        function update_visibility(v) { div.style.display = v ? "flex" : "none"; }
+        $(visible).on(update_visibility);
+        update_visibility($(visible).value);
+
         $(scene).then(scene => {
-            const div = $(parent);
             const {canvas, winscale} = scene.screen;
 
             // The wrapper (canvas.parentElement) has position: relative, so widgets
@@ -65,12 +72,6 @@ function resize_parent(parent, block)
             }
             $(height_box).on(update_position);
             update_position($(height_box).value); // Initial positioning
-
-            // Mirror the block's visibility onto the HTML widget so that
-            // Makie.hide!/unhide! (which toggle blockscene.visible) keep working.
-            function update_visibility(v) { div.style.display = v ? "flex" : "none"; }
-            $(visible).on(update_visibility);
-            update_visibility($(visible).value);
         });
     """
 end
