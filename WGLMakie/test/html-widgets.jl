@@ -442,6 +442,30 @@ using ElectronCall, WGLMakie, Bonito, Test
         @test checkbox.checked[] == false
     end
 
+    @testset "Checkbox - native plots stay hidden" begin
+        # The native checkmark's visibility follows `checked`, so toggling the HTML
+        # checkbox must not make Makie draw it again under the HTML widget.
+        fig = Figure()
+        checkbox = Makie.Checkbox(fig[1, 1])
+
+        app = App(fig)
+        display(edisplay, app)
+
+        native_plots(scene) = vcat(scene.plots, mapreduce(native_plots, vcat, scene.children; init = Makie.Plot[]))
+        any_native_visible() = any(plot -> plot.visible[], native_plots(checkbox.blockscene))
+
+        @test !any_native_visible()
+        for checked in (true, false)
+            evaljs_value(
+                app.session[], js"""(() => {
+                    document.querySelector("input[type=checkbox]").click();
+                })()"""
+            )
+            @test checkbox.checked[] == checked
+            @test !any_native_visible()
+        end
+    end
+
     @testset "Toggle - toggle state" begin
         fig = Figure()
         toggle = Makie.Toggle(fig[1, 1])

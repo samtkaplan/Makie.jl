@@ -81,7 +81,11 @@ end
 # show/hide signal that the HTML replacement mirrors in `resize_parent`.
 function hide_native_plots!(scene::Makie.Scene)
     for plot in scene.plots
-        plot.visible[] = false
+        # Resolve `visible` to false for good: blocks set it again later, e.g. a Checkbox's checkmark follows `checked`.
+        input = plot.attributes.inputs[:visible]
+        input.f = Returns(false)
+        ComputePipeline.mark_dirty!(input)
+        ComputePipeline.update_observables!(input)
     end
     foreach(hide_native_plots!, scene.children)
     return scene
